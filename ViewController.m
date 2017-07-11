@@ -32,11 +32,13 @@
 + (NSArray *)TravelAndPlacesEmoji;
 + (NSArray *)ObjectsEmoji;
 + (NSArray *)SymbolsEmoji;
-+ (NSArray *)DingbatVariantsEmoji; // iOS < 11.0
-+ (NSArray *)DingbatsVariantEmoji; // iOS 11.0+
++ (NSArray *)DingbatsVariantEmoji;
 + (NSArray *)SkinToneEmoji;
 + (NSArray *)GenderEmoji;
 + (NSArray *)NoneVariantEmoji;
++ (NSArray *)ProfessionEmoji;
++ (NSArray *)flagEmojiCountryCodesCommon;
++ (NSArray *)computeEmojiFlagsSortedByLanguage; // blacklist check
 
 // iOS < 10.2
 + (NSArray *)PrepopulatedEmoji;
@@ -44,6 +46,7 @@
 
 @interface UIKeyboardEmojiCategory : NSObject
 + (UIKeyboardEmojiCategory *)categoryForType:(NSInteger)type;
++ (NSUInteger)hasVariantsForEmoji:(NSString *)emoji;
 
 // iOS < 10.2
 + (NSArray *)PeopleEmoji;
@@ -55,11 +58,17 @@
 + (NSArray *)ObjectsAndSymbolsEmoji;
 + (NSArray *)ObjectsEmoji;
 + (NSArray *)SymbolsEmoji;
++ (NSArray *)flagEmojiCountryCodesCommon;
++ (NSArray *)flagEmojiCountryCodesReadyToUse; // blacklist check
++ (NSArray *)computeEmojiFlagsSortedByLanguage; // call -flagEmojiCountryCodesReadyToUse
+
 + (NSArray *)DingbatVariantsEmoji;
 + (NSArray *)SkinToneEmoji;
 + (NSArray *)GenderEmoji;
 + (NSArray *)NoneVariantEmoji;
 + (NSArray *)PrepopulatedEmoji;
+
++ (NSArray *)loadPrecomputedEmojiFlagCategory; // empty on iOS 10.2+
 
 // iOS 10.2+
 + (NSArray *)ProfessionEmoji;
@@ -141,21 +150,20 @@
         case 5:
             return [categoryClass TravelAndPlacesEmoji];
         case 6:
-            if (![categoryClass instancesRespondToSelector:@selector(ObjectsAndSymbolsEmoji)]) {
-                NSLog(@"%@ does not provide ObjectsAndSymbols", categoryClass);
-                return nil;
-            }
-            return [categoryClass ObjectsAndSymbolsEmoji];
+            if ([categoryClass respondsToSelector:@selector(ObjectsAndSymbolsEmoji)])
+                return [categoryClass ObjectsAndSymbolsEmoji];
+            NSLog(@"%@ has no relevant methods", categoryClass);
+            return nil;
         case 7:
             return [categoryClass ObjectsEmoji];
         case 8:
             return [categoryClass SymbolsEmoji];
         case 9: {
-            if ([categoryClass instancesRespondToSelector:@selector(DingbatVariantsEmoji)])
+            if ([categoryClass respondsToSelector:@selector(DingbatVariantsEmoji)])
                 return [categoryClass DingbatVariantsEmoji];
-            if ([categoryClass instancesRespondToSelector:@selector(DingbatsVariantEmoji)])
+            if ([categoryClass respondsToSelector:@selector(DingbatsVariantEmoji)])
                 return [categoryClass DingbatsVariantEmoji];
-            NSLog(@"%@ completely changed Dingbat(s)Variant(s) selector", categoryClass);
+            NSLog(@"%@ has no relevant methods", categoryClass);
             return nil;
         }
         case 10:
@@ -165,35 +173,71 @@
         case 12:
             return [categoryClass NoneVariantEmoji];
         case 13:
-            if (![categoryClass instancesRespondToSelector:@selector(ProfessionEmoji)]) {
-                NSLog(@"%@ does not provide ProfessionEmoji", categoryClass);
-                return nil;
-            }
-            return [categoryClass ProfessionEmoji];
+            if ([categoryClass respondsToSelector:@selector(ProfessionEmoji)])
+                return [categoryClass ProfessionEmoji];
+            NSLog(@"%@ has no relevant methods", categoryClass);
+            return nil;
         case 14:
+            if ([categoryClass respondsToSelector:@selector(computeEmojiFlagsSortedByLanguage)])
+                return [categoryClass computeEmojiFlagsSortedByLanguage];
+            if ([categoryClass respondsToSelector:@selector(loadPrecomputedEmojiFlagCategory)])
+                return [categoryClass loadPrecomputedEmojiFlagCategory];
+            NSLog(@"%@ has no relevant methods", categoryClass);
+            return nil;
+        case 15:
             return [categoryClass PrepopulatedEmoji];
     }
     return nil;
 }
 
-- (void)readEmojis:(BOOL)preset {
+- (void)prettyPrint:(NSArray <NSString *> *)array {
+    int x = 1, perLine = 10;
+    NSMutableString *string = [NSMutableString string];
+    for (NSString *substring in array) {
+        [string appendString:@"@\""];
+        [string appendString:substring];
+        [string appendString:@"\","];
+        if (++x % perLine == 0)
+            [string appendString:@"\n"];
+        else
+            [string appendString:@" "];
+    }
+    NSLog(@"%@", string);
+}
+
+- (void)readEmojis:(BOOL)preset withVariant:(BOOL)withVariant pretty:(BOOL)pretty {
     if (preset) {
         for (NSInteger i = 0; i <= 14; i++) {
             NSLog(@"Preset %ld:", i);
-            for (NSString *emoji in [self emojiPreset:i])
-                NSLog(@"%@", emoji);
+            if (pretty)
+                [self prettyPrint:[self emojiPreset:i]];
+            else {
+                for (NSString *emoji in [self emojiPreset:i]) {
+                    if (withVariant)
+                        NSLog(@"%@ %lu", emoji, [NSClassFromString(@"UIKeyboardEmojiCategory") hasVariantsForEmoji:emoji]);
+                    else
+                        NSLog(@"%@", emoji);
+                }
+            }
         }
     } else {
         for (NSInteger i = 0; i <= 9; i++) {
             NSLog(@"Category %ld:", i);
-            for (NSString *emoji in [self emojiCategory:i])
-                NSLog(@"%@", emoji);
+            if (pretty)
+                [self prettyPrint:[self emojiCategory:i]];
+            else {
+                for (NSString *emoji in [self emojiCategory:i]) {
+                    if (withVariant)
+                        NSLog(@"%@ %lu", emoji, [NSClassFromString(@"UIKeyboardEmojiCategory") hasVariantsForEmoji:emoji]);
+                    else
+                        NSLog(@"%@", emoji);
+                }
+            }
         }
     }
 }
 
 - (void)setup {
-    
     ct = dlopen("/System/Library/Frameworks/CoreText.framework/CoreText", RTLD_LAZY);
     assert(ct != NULL);
     gsFont = dlopen("/System/Library/PrivateFrameworks/FontServices.framework/libGSFontCache.dylib", RTLD_LAZY);
@@ -204,7 +248,7 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     [self setup];
-    [self readEmojis:YES];
+    [self readEmojis:NO withVariant:YES pretty:NO];
     //[self readFontCache:NO];
 }
 
