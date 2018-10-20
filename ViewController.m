@@ -9,86 +9,22 @@
 #import "ViewController.h"
 #import <CoreText/CoreText.h>
 #import <CoreGraphics/CoreGraphics.h>
+#import "Header.h"
 #import <dlfcn.h>
 
 @interface ViewController (){
     void *ct;
+    void *cs;
     void *gsFont;
     CTFontRef emojiFont;
     CGFontRef emojiCGFont;
-#ifdef USE
     CFDataRef (*XTCopyUncompressedBitmapRepresentation)(const UInt8 *, CFIndex);
-#endif
 }
-@end
-
-@interface UIKeyboardEmoji : NSObject
-@property() NSString *emojiString;
-@end
-
-@interface EMFEmojiCategory : NSObject
-// iOS 10.2+
-+ (NSArray <NSString *> *)PeopleEmoji;
-+ (NSArray <NSString *> *)NatureEmoji;
-+ (NSArray <NSString *> *)FoodAndDrinkEmoji;
-+ (NSArray <NSString *> *)CelebrationEmoji;
-+ (NSArray <NSString *> *)ActivityEmoji;
-+ (NSArray <NSString *> *)TravelAndPlacesEmoji;
-+ (NSArray <NSString *> *)ObjectsEmoji;
-+ (NSArray <NSString *> *)SymbolsEmoji;
-+ (NSArray <NSString *> *)DingbatsVariantEmoji;
-+ (NSArray <NSString *> *)SkinToneEmoji;
-+ (NSArray <NSString *> *)GenderEmoji;
-+ (NSArray <NSString *> *)NoneVariantEmoji;
-+ (NSArray <NSString *> *)ProfessionEmoji;
-+ (NSArray <NSString *> *)flagEmojiCountryCodesCommon;
-+ (NSArray <NSString *> *)computeEmojiFlagsSortedByLanguage; // blacklist check
-
-// iOS < 10.2
-+ (NSArray <NSString *> *)PrepopulatedEmoji;
-
-// iOS 12+
-+ (NSArray <NSString *> *)FlagsEmoji; // Non-nation flags
-@end
-
-@interface UIKeyboardEmojiCategory : NSObject
-+ (UIKeyboardEmojiCategory *)categoryForType:(NSInteger)type;
-+ (NSUInteger)hasVariantsForEmoji:(NSString *)emoji;
-
-// iOS < 10.2
-+ (NSArray <NSString *> *)PeopleEmoji;
-+ (NSArray <NSString *> *)NatureEmoji;
-+ (NSArray <NSString *> *)FoodAndDrinkEmoji;
-+ (NSArray <NSString *> *)CelebrationEmoji;
-+ (NSArray <NSString *> *)ActivityEmoji;
-+ (NSArray <NSString *> *)TravelAndPlacesEmoji;
-+ (NSArray <NSString *> *)ObjectsAndSymbolsEmoji;
-+ (NSArray <NSString *> *)ObjectsEmoji;
-+ (NSArray <NSString *> *)SymbolsEmoji;
-+ (NSArray <NSString *> *)flagEmojiCountryCodesCommon;
-+ (NSArray <NSString *> *)flagEmojiCountryCodesReadyToUse; // blacklist check
-+ (NSArray <NSString *> *)computeEmojiFlagsSortedByLanguage; // call -flagEmojiCountryCodesReadyToUse
-
-+ (NSArray <NSString *> *)DingbatVariantsEmoji;
-+ (NSArray <NSString *> *)SkinToneEmoji;
-+ (NSArray <NSString *> *)GenderEmoji;
-+ (NSArray <NSString *> *)NoneVariantEmoji;
-+ (NSArray <NSString *> *)PrepopulatedEmoji;
-
-+ (NSArray <NSString *> *)loadPrecomputedEmojiFlagCategory; // empty on iOS 10.2+
-
-// iOS 10.2+
-+ (NSArray <NSString *> *)ProfessionEmoji;
-+ (NSString *)emojiCategoryStringForCategoryType:(NSInteger)type;
-+ (NSInteger)emojiCategoryTypeForCategoryString:(NSString *)category;
-
-@property(retain, nonatomic) NSArray <UIKeyboardEmoji *> *emoji;
 @end
 
 @implementation ViewController
 
 - (CFDataRef)uncompressedBitmap:(CFDataRef)compressedData {
-#ifdef USE
     if (XTCopyUncompressedBitmapRepresentation == NULL) {
         NSLog(@"Error: XTCopyUncompressedBitmapRepresentation not found");
         return compressedData;
@@ -96,9 +32,6 @@
     CFDataRef uncompressedData = XTCopyUncompressedBitmapRepresentation(CFDataGetBytePtr(compressedData), CFDataGetLength(compressedData));
     CFRelease(compressedData);
     return uncompressedData;
-#else
-    return compressedData;
-#endif
 }
 
 - (void)readFontCache:(BOOL)onlyCharset {
@@ -109,9 +42,7 @@
             NSLog(@"AppleColorEmoji CharacterSet:");
             CFDataRef compressedData = (__bridge CFDataRef)emoji[@"NSCTFontCharacterSetAttribute"];
             NSLog(@"Compressed: %@", compressedData);
-#ifdef USE
             NSLog(@"Uncompressed: %@", [self uncompressedBitmap:compressedData]);
-#endif
         } else
             NSLog(@"AppleColorEmoji:\n%@", emoji);
     }
@@ -121,15 +52,13 @@
             NSLog(@".AppleColorEmojiUI CharacterSet:");
             CFDataRef compressedData = (__bridge CFDataRef)emojiUI[@"NSCTFontCharacterSetAttribute"];
             NSLog(@"Compressed: %@", compressedData);
-#ifdef USE
             NSLog(@"Uncompressed: %@", [self uncompressedBitmap:compressedData]);
-#endif
         } else
             NSLog(@".AppleColorEmojiUI:\n%@", emoji);
     }
 }
 
-- (NSArray *)emojiCategory:(NSInteger)type {
+- (NSMutableArray <NSString *> *)emojiCategory:(NSInteger)type {
     NSArray <UIKeyboardEmoji *> *emojiArray = [NSClassFromString(@"UIKeyboardEmojiCategory") categoryForType:type].emoji;
     NSMutableArray <NSString *> *emojiArray_ = [NSMutableArray arrayWithCapacity:emojiArray.count];
     for (UIKeyboardEmoji *emoji in emojiArray)
@@ -141,7 +70,7 @@
     return kCFCoreFoundationVersionNumber >= 1348.22 || type == 14 ? NSClassFromString(@"EMFEmojiCategory") : NSClassFromString(@"UIKeyboardEmojiCategory");
 }
 
-- (NSArray *)emojiPreset:(NSInteger)type {
+- (NSArray <NSString *> *)emojiPreset:(NSInteger)type {
     Class categoryClass = [self categoryClass:type];
     switch (type) {
         case 0:
@@ -263,7 +192,6 @@
         NSLog(@"%@ -> %u %u %@", emojiString, glyphs[0], glyphs[length - 1], CGFontCopyGlyphNameForGlyph(emojiCGFont, glyphs[0]));
         return glyphs[0];
     }
-    //NSLog(@"%@ -> 0", emojiString);
     return 0;
 }
 
@@ -283,6 +211,15 @@
 - (void)setup {
     ct = dlopen("/System/Library/Frameworks/CoreText.framework/CoreText", RTLD_LAZY);
     assert(ct != NULL);
+    cs = dlopen("/Library/Frameworks/CydiaSubstrate.framework/CydiaSubstrate", RTLD_LAZY);
+    assert(cs != NULL);
+    MSGetImageByName = dlsym(cs, "MSGetImageByName");
+    assert(MSGetImageByName != NULL);
+    MSFindSymbol = dlsym(cs, "MSFindSymbol");
+    assert(MSFindSymbol != NULL);
+    MSImageRef ref = MSGetImageByName("/System/Library/Frameworks/CoreText.framework/CoreText");
+    XTCopyUncompressedBitmapRepresentation = MSFindSymbol(ref, "__Z38XTCopyUncompressedBitmapRepresentationPKhm");
+    assert(XTCopyUncompressedBitmapRepresentation != NULL);
     gsFont = dlopen("/System/Library/PrivateFrameworks/FontServices.framework/libGSFontCache.dylib", RTLD_LAZY);
     assert(gsFont != NULL);
     [[NSBundle bundleWithPath:@"/System/Library/PrivateFrameworks/EmojiFoundation.framework"] load];
@@ -290,11 +227,21 @@
     emojiCGFont = CTFontCopyGraphicsFont(emojiFont, NULL);
 }
 
+- (void)extractSkins {
+    if (NSClassFromString(@"EMFStringUtilities")) {
+        NSArray <NSString *> *skins = [self emojiPreset:10];
+        for (NSString *skin in skins)
+            [self prettyPrint:[NSClassFromString(@"EMFStringUtilities") _skinToneVariantsForString:skin]];
+    } else
+        NSLog(@"EMFStringUtilities does not exist");
+}
+
 - (void)viewDidLoad {
     [super viewDidLoad];
     [self setup];
-    [self readEmojis:YES withVariant:NO pretty:YES];
-    [self readFontCache:NO];
+    //[self extractSkins];
+    //[self readEmojis:YES withVariant:NO pretty:YES];
+    [self readFontCache:YES];
 }
 
 - (void)didReceiveMemoryWarning {
