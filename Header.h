@@ -7,9 +7,20 @@
 //
 
 #include <unicode/utf8.h>
+#include <unicode/utypes.h>
 
 #ifndef Header_h
 #define Header_h
+
+typedef struct USet USet;
+
+extern USet *uset_openEmpty(void);
+extern CFCharacterSetRef _CFCreateCharacterSetFromUSet(USet *);
+extern void uset_applyIntPropertyValue(USet *, long long, int32_t, UErrorCode *);
+extern void uset_close(USet *);
+extern void uset_freeze(USet *);
+extern int32_t uset_getItemCount(USet *);
+extern int32_t uset_getItem(const USet *, int32_t, UChar32 *, UChar32 *, UChar *, int32_t, UErrorCode *);
 
 @interface UIKeyboardEmoji : NSObject
 @property() NSString *emojiString;

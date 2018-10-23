@@ -138,8 +138,10 @@
         [string appendString:@"@\""];
         [string appendString:substring];
         [string appendString:@"\","];
-        if (x++ % perLine == 0)
-            [string appendString:@"\n"];
+        if (x++ % perLine == 0) {
+            NSLog(@"%@", string);
+            string.string = @"";
+        }
         else
             [string appendString:@" "];
     }
@@ -236,12 +238,41 @@
         NSLog(@"EMFStringUtilities does not exist");
 }
 
+- (NSArray *)charsetToArray:(NSCharacterSet *)charset {
+    NSMutableArray *array = [NSMutableArray array];
+    for (int plane = 0; plane <= 16; plane++) {
+        if ([charset hasMemberInPlane:plane]) {
+            UTF32Char c;
+            for (c = plane << 16; c < (plane+1) << 16; c++) {
+                if ([charset longCharacterIsMember:c]) {
+                    UTF32Char c1 = OSSwapHostToLittleInt32(c);
+                    NSString *s = [[NSString alloc] initWithBytes:&c1 length:4 encoding:NSUTF32LittleEndianStringEncoding];
+                    [array addObject:s];
+                }
+            }
+        }
+    }
+    return array;
+}
+
+- (void)printEmojiUset {
+    UErrorCode error = U_ZERO_ERROR;
+    USet *set = uset_openEmpty();
+    uset_applyIntPropertyValue(set, UCHAR_EMOJI_PRESENTATION, 1, &error);
+    uset_freeze(set);
+    CFCharacterSetRef cfSet = _CFCreateCharacterSetFromUSet(set);
+    [self prettyPrint:[self charsetToArray:(__bridge NSCharacterSet *)cfSet]];
+    uset_close(set);
+    CFRelease(cfSet);
+}
+
 - (void)viewDidLoad {
     [super viewDidLoad];
     [self setup];
     //[self extractSkins];
     //[self readEmojis:YES withVariant:NO pretty:YES];
-    [self readFontCache:YES];
+    //[self readFontCache:NO];
+    //[self printEmojiUset];
 }
 
 - (void)didReceiveMemoryWarning {
