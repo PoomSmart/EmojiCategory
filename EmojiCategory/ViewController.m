@@ -255,10 +255,10 @@
     return array;
 }
 
-- (void)printEmojiUset {
+- (void)printEmojiUset:(UProperty)property {
     UErrorCode error = U_ZERO_ERROR;
     USet *set = uset_openEmpty();
-    uset_applyIntPropertyValue(set, UCHAR_EMOJI_PRESENTATION, 1, &error);
+    uset_applyIntPropertyValue(set, property, 1, &error);
     uset_freeze(set);
     CFCharacterSetRef cfSet = _CFCreateCharacterSetFromUSet(set);
     [self prettyPrint:[self charsetToArray:(__bridge NSCharacterSet *)cfSet]];
@@ -272,7 +272,8 @@
     //[self extractSkins];
     //[self readEmojis:YES withVariant:NO pretty:YES];
     //[self readFontCache:NO];
-    //[self printEmojiUset];
+    //[self printEmojiUset:UCHAR_EMOJI_PRESENTATION];
+    //[self printEmojiUset:UCHAR_EXTENDED_PICTOGRAPHIC];
 }
 
 - (void)didReceiveMemoryWarning {
