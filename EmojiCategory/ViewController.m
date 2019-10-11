@@ -88,8 +88,7 @@
         case 6:
             if ([categoryClass respondsToSelector:@selector(ObjectsAndSymbolsEmoji)])
                 return [categoryClass ObjectsAndSymbolsEmoji];
-            NSLog(@"%@ has no relevant methods", categoryClass);
-            return nil;
+            break;
         case 7:
             return [categoryClass ObjectsEmoji];
         case 8:
@@ -99,8 +98,7 @@
                 return [categoryClass DingbatVariantsEmoji];
             if ([categoryClass respondsToSelector:@selector(DingbatsVariantEmoji)])
                 return [categoryClass DingbatsVariantEmoji];
-            NSLog(@"%@ has no relevant methods", categoryClass);
-            return nil;
+            break;
         }
         case 10:
             return [categoryClass SkinToneEmoji];
@@ -111,23 +109,33 @@
         case 13:
             if ([categoryClass respondsToSelector:@selector(ProfessionEmoji)])
                 return [categoryClass ProfessionEmoji];
-            NSLog(@"%@ has no relevant methods", categoryClass);
-            return nil;
+            break;
         case 14:
             if ([categoryClass respondsToSelector:@selector(computeEmojiFlagsSortedByLanguage)])
                 return [categoryClass computeEmojiFlagsSortedByLanguage];
             if ([categoryClass respondsToSelector:@selector(loadPrecomputedEmojiFlagCategory)])
                 return [categoryClass loadPrecomputedEmojiFlagCategory];
-            NSLog(@"%@ has no relevant methods", categoryClass);
-            return nil;
+            break;
         case 15:
             if ([categoryClass respondsToSelector:@selector(FlagsEmoji)])
                 return [categoryClass FlagsEmoji];
-            NSLog(@"%@ has no relevant methods", categoryClass);
-            return nil;
+            break;
         case 16:
             return [categoryClass PrepopulatedEmoji];
+        case 17:
+            if ([categoryClass respondsToSelector:@selector(ProfessionWithoutSkinToneEmoji)])
+                return [categoryClass ProfessionWithoutSkinToneEmoji];
+            break;
+        case 18:
+            if ([categoryClass respondsToSelector:@selector(CoupleMultiSkinToneEmoji)])
+                return [categoryClass CoupleMultiSkinToneEmoji];
+            break;
+        case 19:
+            if ([categoryClass respondsToSelector:@selector(MultiPersonFamilySkinToneEmoji)])
+                return [categoryClass MultiPersonFamilySkinToneEmoji];
+            break;
     }
+    NSLog(@"%@ has no relevant methods", categoryClass);
     return nil;
 }
 
@@ -150,7 +158,7 @@
 
 - (void)readEmojis:(BOOL)preset withVariant:(BOOL)withVariant pretty:(BOOL)pretty {
     if (preset) {
-        for (NSInteger i = 0; i <= 15; i++) {
+        for (NSInteger i = 0; i <= 19; ++i) {
             NSLog(@"Preset %ld:", i);
             if (pretty)
                 [self prettyPrint:[self emojiPreset:i]];
@@ -164,7 +172,7 @@
             }
         }
     } else {
-        for (NSInteger i = 0; i <= 9; i++) {
+        for (NSInteger i = 0; i <= 9; ++i) {
             NSLog(@"Category %ld:", i);
             if (pretty)
                 [self prettyPrint:[self emojiCategory:i]];
@@ -185,8 +193,8 @@
     [emojiString getCharacters:characters range:NSMakeRange(0, emojiString.length)];
     int length = 0;
     while (characters[length])
-        length++;
-    for (int i = 0; i < length; i++)
+        ++length;
+    for (int i = 0; i < length; ++i)
         printf("%x ", characters[i]);
     printf("\n");
     CGGlyph glyphs[length];
@@ -214,14 +222,15 @@
     ct = dlopen("/System/Library/Frameworks/CoreText.framework/CoreText", RTLD_LAZY);
     assert(ct != NULL);
     cs = dlopen("/Library/Frameworks/CydiaSubstrate.framework/CydiaSubstrate", RTLD_LAZY);
-    assert(cs != NULL);
-    MSGetImageByName = dlsym(cs, "MSGetImageByName");
-    assert(MSGetImageByName != NULL);
-    MSFindSymbol = dlsym(cs, "MSFindSymbol");
-    assert(MSFindSymbol != NULL);
-    MSImageRef ref = MSGetImageByName("/System/Library/Frameworks/CoreText.framework/CoreText");
-    XTCopyUncompressedBitmapRepresentation = MSFindSymbol(ref, "__Z38XTCopyUncompressedBitmapRepresentationPKhm");
-    assert(XTCopyUncompressedBitmapRepresentation != NULL);
+    if (cs) {
+        MSGetImageByName = dlsym(cs, "MSGetImageByName");
+        assert(MSGetImageByName != NULL);
+        MSFindSymbol = dlsym(cs, "MSFindSymbol");
+        assert(MSFindSymbol != NULL);
+        MSImageRef ref = MSGetImageByName("/System/Library/Frameworks/CoreText.framework/CoreText");
+        XTCopyUncompressedBitmapRepresentation = MSFindSymbol(ref, "__Z38XTCopyUncompressedBitmapRepresentationPKhm");
+        assert(XTCopyUncompressedBitmapRepresentation != NULL);
+    }
     gsFont = dlopen("/System/Library/PrivateFrameworks/FontServices.framework/libGSFontCache.dylib", RTLD_LAZY);
     assert(gsFont != NULL);
     [[NSBundle bundleWithPath:@"/System/Library/PrivateFrameworks/EmojiFoundation.framework"] load];
@@ -240,10 +249,10 @@
 
 - (NSArray *)charsetToArray:(NSCharacterSet *)charset {
     NSMutableArray *array = [NSMutableArray array];
-    for (int plane = 0; plane <= 16; plane++) {
+    for (int plane = 0; plane <= 16; ++plane) {
         if ([charset hasMemberInPlane:plane]) {
             UTF32Char c;
-            for (c = plane << 16; c < (plane+1) << 16; c++) {
+            for (c = plane << 16; c < (plane + 1) << 16; ++c) {
                 if ([charset longCharacterIsMember:c]) {
                     UTF32Char c1 = OSSwapHostToLittleInt32(c);
                     NSString *s = [[NSString alloc] initWithBytes:&c1 length:4 encoding:NSUTF32LittleEndianStringEncoding];
