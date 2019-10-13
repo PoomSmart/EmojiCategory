@@ -22,6 +22,14 @@ extern void uset_freeze(USet *);
 extern int32_t uset_getItemCount(USet *);
 extern int32_t uset_getItem(const USet *, int32_t, UChar32 *, UChar32 *, UChar *, int32_t, UErrorCode *);
 
+@interface NSCharacterSet (EmojiFoundation)
++ (NSCharacterSet *)_emojiCharacterSet;
+@end
+
+@interface NSString (Private)
+- (UChar32)_firstLongCharacter;
+@end
+
 @interface UIKeyboardEmoji : NSObject
 @property() NSString *emojiString;
 @end

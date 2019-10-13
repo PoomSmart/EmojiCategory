@@ -34,27 +34,58 @@
     return uncompressedData;
 }
 
+- (NSString *)cfDataToString:(CFDataRef)data {
+    const unsigned char *bytes = (const unsigned char *)CFDataGetBytePtr(data);
+    NSMutableString *hex = [NSMutableString new];
+    for (NSInteger i = 0; i < CFDataGetLength(data); ++i) {
+        [hex appendFormat:@"%02x", bytes[i]];
+    }
+    return hex.copy;
+}
+
+static inline char itoh(int i) {
+    if (i > 9) return 'A' + (i - 10);
+    return '0' + i;
+}
+
+- (NSString *)NSDataToHex:(NSData *)data {
+    NSUInteger len = data.length;
+    unsigned char *bytes = (unsigned char *)data.bytes;
+    unsigned char *buf = (unsigned char *)malloc(len * 2);
+    for (NSUInteger i = 0; i < len; ++i) {
+        buf[i * 2] = itoh((bytes[i] >> 4) & 0xF);
+        buf[i * 2 + 1] = itoh(bytes[i] & 0xF);
+    }
+    return [[NSString alloc] initWithBytesNoCopy:buf length:len * 2 encoding:NSASCIIStringEncoding freeWhenDone:YES];
+}
+
 - (void)readFontCache:(BOOL)onlyCharset {
     NSDictionary *(*dict)(void) = (NSDictionary* (*)(void))dlsym(gsFont, "GSFontCacheGetDictionary");
-    NSDictionary *emoji = dict()[@"CTFontInfo.plist"][@"Attrs"][@"AppleColorEmoji"];
-    if (emoji) {
-        if (onlyCharset) {
-            NSLog(@"AppleColorEmoji CharacterSet:");
-            CFDataRef compressedData = (__bridge CFDataRef)emoji[@"NSCTFontCharacterSetAttribute"];
-            NSLog(@"Compressed: %@", compressedData);
-            NSLog(@"Uncompressed: %@", [self uncompressedBitmap:compressedData]);
-        } else
-            NSLog(@"AppleColorEmoji:\n%@", emoji);
-    }
-    NSDictionary *emojiUI = dict()[@"CTFontInfo.plist"][@"Attrs"][@".AppleColorEmojiUI"];
-    if (emojiUI) {
-        if (onlyCharset) {
-            NSLog(@".AppleColorEmojiUI CharacterSet:");
-            CFDataRef compressedData = (__bridge CFDataRef)emojiUI[@"NSCTFontCharacterSetAttribute"];
-            NSLog(@"Compressed: %@", compressedData);
-            NSLog(@"Uncompressed: %@", [self uncompressedBitmap:compressedData]);
-        } else
-            NSLog(@".AppleColorEmojiUI:\n%@", emoji);
+    if (kCFCoreFoundationVersionNumber > 1575.17) {
+        CFDataRef emoji = (__bridge CFDataRef)dict()[@"CharacterSets.plist"][@".AppleColorEmojiUI"];
+        NSLog(@"Compressed: %@", [self cfDataToString:emoji]);
+        NSLog(@"Uncompressed: %@", [self NSDataToHex:[NSCharacterSet _emojiCharacterSet].bitmapRepresentation]);
+    } else {
+        NSDictionary *emoji = dict()[@"CTFontInfo.plist"][@"Attrs"][@"AppleColorEmoji"];
+        if (emoji) {
+            if (onlyCharset) {
+                NSLog(@"AppleColorEmoji CharacterSet:");
+                CFDataRef compressedData = (__bridge CFDataRef)emoji[@"NSCTFontCharacterSetAttribute"];
+                NSLog(@"Compressed: %@", compressedData);
+                NSLog(@"Uncompressed: %@", [self uncompressedBitmap:compressedData]);
+            } else
+                NSLog(@"AppleColorEmoji:\n%@", emoji);
+        }
+        NSDictionary *emojiUI = dict()[@"CTFontInfo.plist"][@"Attrs"][@".AppleColorEmojiUI"];
+        if (emojiUI) {
+            if (onlyCharset) {
+                NSLog(@".AppleColorEmojiUI CharacterSet:");
+                CFDataRef compressedData = (__bridge CFDataRef)emojiUI[@"NSCTFontCharacterSetAttribute"];
+                NSLog(@"Compressed: %@", compressedData);
+                NSLog(@"Uncompressed: %@", [self uncompressedBitmap:compressedData]);
+            } else
+                NSLog(@".AppleColorEmojiUI:\n%@", emoji);
+        }
     }
 }
 
@@ -139,13 +170,20 @@
     return nil;
 }
 
-- (void)prettyPrint:(NSArray <NSString *> *)array {
+- (void)prettyPrint:(NSArray <NSString *> *)array withQuotes:(BOOL)wq asCodepoints:(BOOL)cp {
     int x = 1, perLine = 10;
     NSMutableString *string = [NSMutableString string];
     for (NSString *substring in array) {
-        [string appendString:@"@\""];
-        [string appendString:substring];
-        [string appendString:@"\","];
+        if (wq)
+            [string appendString:@"@\""];
+        if (cp)
+            [string appendFormat:@"0x%x", [substring _firstLongCharacter]];
+        else
+            [string appendString:substring];
+        if (wq)
+            [string appendString:@"\","];
+        else
+            [string appendString:@","];
         if (x++ % perLine == 0) {
             NSLog(@"%@", string);
             string.string = @"";
@@ -156,16 +194,24 @@
     NSLog(@"%@", string);
 }
 
+- (void)prettyPrint:(NSArray <NSString *> *)array withQuotes:(BOOL)wq {
+    [self prettyPrint:array withQuotes:wq asCodepoints:NO];
+}
+
+- (void)prettyPrint:(NSArray <NSString *> *)array {
+    [self prettyPrint:array withQuotes:YES asCodepoints:NO];
+}
+
 - (void)readEmojis:(BOOL)preset withVariant:(BOOL)withVariant pretty:(BOOL)pretty {
     if (preset) {
         for (NSInteger i = 0; i <= 19; ++i) {
-            NSLog(@"Preset %ld:", i);
+            NSLog(@"Preset %ld:", (long)i);
             if (pretty)
                 [self prettyPrint:[self emojiPreset:i]];
             else {
                 for (NSString *emoji in [self emojiPreset:i]) {
                     if (withVariant)
-                        NSLog(@"%@ %lu", emoji, [NSClassFromString(@"UIKeyboardEmojiCategory") hasVariantsForEmoji:emoji]);
+                        NSLog(@"%@ %lu", emoji, (unsigned long)[NSClassFromString(@"UIKeyboardEmojiCategory") hasVariantsForEmoji:emoji]);
                     else
                         NSLog(@"%@: %u", emoji, [self glyphForEmojiString:emoji]);
                 }
@@ -173,13 +219,13 @@
         }
     } else {
         for (NSInteger i = 0; i <= 9; ++i) {
-            NSLog(@"Category %ld:", i);
+            NSLog(@"Category %ld:", (long)i);
             if (pretty)
                 [self prettyPrint:[self emojiCategory:i]];
             else {
                 for (NSString *emoji in [self emojiCategory:i]) {
                     if (withVariant)
-                        NSLog(@"%@ %lu", emoji, [NSClassFromString(@"UIKeyboardEmojiCategory") hasVariantsForEmoji:emoji]);
+                        NSLog(@"%@ %lu", emoji, (unsigned long)[NSClassFromString(@"UIKeyboardEmojiCategory") hasVariantsForEmoji:emoji]);
                     else
                         NSLog(@"%@", emoji);
                 }
@@ -229,7 +275,6 @@
         assert(MSFindSymbol != NULL);
         MSImageRef ref = MSGetImageByName("/System/Library/Frameworks/CoreText.framework/CoreText");
         XTCopyUncompressedBitmapRepresentation = MSFindSymbol(ref, "__Z38XTCopyUncompressedBitmapRepresentationPKhm");
-        assert(XTCopyUncompressedBitmapRepresentation != NULL);
     }
     gsFont = dlopen("/System/Library/PrivateFrameworks/FontServices.framework/libGSFontCache.dylib", RTLD_LAZY);
     assert(gsFont != NULL);
@@ -275,19 +320,63 @@
     CFRelease(cfSet);
 }
 
+- (void)printEmojiUsetCodepoints:(UProperty)property {
+    NSMutableArray <NSString *> *codepoints = [NSMutableArray array];
+    UErrorCode error = U_ZERO_ERROR;
+    USet *set = uset_openEmpty();
+    uset_applyIntPropertyValue(set, property, 1, &error);
+    uset_freeze(set);
+    
+    error = U_ZERO_ERROR;
+    UChar buffer[2048];
+    int32_t stringLen;
+
+    int32_t itemCount = uset_getItemCount(set);
+    int32_t codepointCount = 0;
+    for (int32_t i = 0; i < itemCount; ++i) {
+        UChar32 start, end;
+        UChar *string;
+        string = buffer;
+        stringLen = uset_getItem(set, i, &start, &end, buffer, sizeof(buffer)/sizeof(UChar), &error);
+        if (error == U_BUFFER_OVERFLOW_ERROR) {
+            string = (UChar *)malloc(sizeof(UChar) * (stringLen + 1));
+            if (!string)
+                return;
+            error = U_ZERO_ERROR;
+            uset_getItem(set, i, &start, &end, string, stringLen + 1, &error);
+        }
+        if (U_FAILURE(error)) {
+            if (string != buffer)
+                free(string);
+            return;
+        }
+        if (stringLen <= 0) {
+            for (UChar32 c = start; c <= end + 1; ++c) {
+                [codepoints addObject:[NSString stringWithFormat:@"0x%x", c]];
+            }
+            codepointCount += end - start + 2;
+        }
+        if (string != buffer)
+            free(string);
+    }
+    NSLog(@"Codepoints count: %d", codepointCount);
+    [self prettyPrint:codepoints withQuotes:NO];
+}
+
+- (void)printCodepointsForPreset:(NSInteger)preset {
+    [self prettyPrint:[self emojiPreset:preset] withQuotes:NO asCodepoints:YES];
+}
+
 - (void)viewDidLoad {
     [super viewDidLoad];
     [self setup];
+    // [self printCodepointsForPreset:11]; // gender emojis
     //[self extractSkins];
     //[self readEmojis:YES withVariant:NO pretty:YES];
     //[self readFontCache:NO];
-    //[self printEmojiUset:UCHAR_EMOJI_PRESENTATION];
-    //[self printEmojiUset:UCHAR_EXTENDED_PICTOGRAPHIC];
-}
-
-- (void)didReceiveMemoryWarning {
-    [super didReceiveMemoryWarning];
-    // Dispose of any resources that can be recreated.
+    //[self printEmojiUsetCodepoints:UCHAR_EMOJI_PRESENTATION];
+    //[self printEmojiUsetCodepoints:UCHAR_EMOJI_MODIFIER];
+    //[self printEmojiUsetCodepoints:UCHAR_EXTENDED_PICTOGRAPHIC];
 }
 
 @end
