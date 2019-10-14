@@ -12,6 +12,8 @@
 #ifndef Header_h
 #define Header_h
 
+#define ZWJ @"‍"
+
 typedef struct USet USet;
 
 extern USet *uset_openEmpty(void);

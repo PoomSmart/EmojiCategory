@@ -173,6 +173,7 @@ static inline char itoh(int i) {
 - (void)prettyPrint:(NSArray <NSString *> *)array withQuotes:(BOOL)wq asCodepoints:(BOOL)cp {
     int x = 1, perLine = 10;
     NSMutableString *string = [NSMutableString string];
+    NSLog(@"Total: %lu", (unsigned long)array.count);
     for (NSString *substring in array) {
         if (wq)
             [string appendString:@"@\""];
@@ -296,8 +297,7 @@ static inline char itoh(int i) {
     NSMutableArray *array = [NSMutableArray array];
     for (int plane = 0; plane <= 16; ++plane) {
         if ([charset hasMemberInPlane:plane]) {
-            UTF32Char c;
-            for (c = plane << 16; c < (plane + 1) << 16; ++c) {
+            for (UTF32Char c = plane << 16; c < (plane + 1) << 16; ++c) {
                 if ([charset longCharacterIsMember:c]) {
                     UTF32Char c1 = OSSwapHostToLittleInt32(c);
                     NSString *s = [[NSString alloc] initWithBytes:&c1 length:4 encoding:NSUTF32LittleEndianStringEncoding];
@@ -361,16 +361,33 @@ static inline char itoh(int i) {
     }
     NSLog(@"Codepoints count: %d", codepointCount);
     [self prettyPrint:codepoints withQuotes:NO];
+    uset_close(set);
 }
 
 - (void)printCodepointsForPreset:(NSInteger)preset {
     [self prettyPrint:[self emojiPreset:preset] withQuotes:NO asCodepoints:YES];
 }
 
+- (void)printProfessionModifierCodepoints {
+    NSArray <NSString *> *professions = [self emojiPreset:13];
+    NSMutableArray *codepoints = [NSMutableArray array];
+    for (NSString *profression in professions) {
+        NSUInteger zwj = [profression rangeOfString:ZWJ options:NSLiteralSearch].location;
+        if (zwj != NSNotFound) {
+            NSString *modifier = [profression substringFromIndex:zwj + 1];
+            if (![codepoints containsObject:modifier])
+                [codepoints addObject:modifier];
+        }
+    }
+    [self prettyPrint:codepoints withQuotes:NO asCodepoints:YES];
+}
+
 - (void)viewDidLoad {
     [super viewDidLoad];
     [self setup];
-    // [self printCodepointsForPreset:11]; // gender emojis
+    //[self printProfessionModifierCodepoints];
+    //[self printCodepointsForPreset:10]; // skin tone emojis
+    //[self printCodepointsForPreset:11]; // gender emojis
     //[self extractSkins];
     //[self readEmojis:YES withVariant:NO pretty:YES];
     //[self readFontCache:NO];
