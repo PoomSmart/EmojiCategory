@@ -59,12 +59,23 @@ static inline char itoh(int i) {
     return [[NSString alloc] initWithBytesNoCopy:buf length:len * 2 encoding:NSASCIIStringEncoding freeWhenDone:YES];
 }
 
+- (void)printUncompressedNSData:(NSData *)uncompressedData {
+    const UInt8 *bytes = uncompressedData.bytes;
+    NSMutableArray *array = [NSMutableArray array];
+    for (int i = 0; i < uncompressedData.length; ++i) {
+        [array addObject:[NSString stringWithFormat:@"0x%x", bytes[i]]];
+    }
+    NSLog(@"Uncompressed:");
+    [self prettyPrint:array withQuotes:NO];
+}
+
 - (void)readFontCache:(BOOL)onlyCharset {
     NSDictionary *(*dict)(void) = (NSDictionary* (*)(void))dlsym(gsFont, "GSFontCacheGetDictionary");
     if (kCFCoreFoundationVersionNumber > 1575.17) {
         CFDataRef emoji = (__bridge CFDataRef)dict()[@"CharacterSets.plist"][@".AppleColorEmojiUI"];
         NSLog(@"Compressed: %@", [self cfDataToString:emoji]);
-        NSLog(@"Uncompressed: %@", [self NSDataToHex:[NSCharacterSet _emojiCharacterSet].bitmapRepresentation]);
+        NSData *uncompressedData = [NSCharacterSet _emojiCharacterSet].bitmapRepresentation;
+        [self printUncompressedNSData:uncompressedData];
     } else {
         NSDictionary *emoji = dict()[@"CTFontInfo.plist"][@"Attrs"][@"AppleColorEmoji"];
         if (emoji) {
@@ -72,7 +83,7 @@ static inline char itoh(int i) {
                 NSLog(@"AppleColorEmoji CharacterSet:");
                 CFDataRef compressedData = (__bridge CFDataRef)emoji[@"NSCTFontCharacterSetAttribute"];
                 NSLog(@"Compressed: %@", compressedData);
-                NSLog(@"Uncompressed: %@", [self uncompressedBitmap:compressedData]);
+                [self printUncompressedNSData:(__bridge NSData *)[self uncompressedBitmap:compressedData]];
             } else
                 NSLog(@"AppleColorEmoji:\n%@", emoji);
         }
@@ -82,7 +93,7 @@ static inline char itoh(int i) {
                 NSLog(@".AppleColorEmojiUI CharacterSet:");
                 CFDataRef compressedData = (__bridge CFDataRef)emojiUI[@"NSCTFontCharacterSetAttribute"];
                 NSLog(@"Compressed: %@", compressedData);
-                NSLog(@"Uncompressed: %@", [self uncompressedBitmap:compressedData]);
+                [self printUncompressedNSData:(__bridge NSData *)[self uncompressedBitmap:compressedData]];
             } else
                 NSLog(@".AppleColorEmojiUI:\n%@", emoji);
         }
@@ -390,7 +401,7 @@ static inline char itoh(int i) {
     //[self printCodepointsForPreset:11]; // gender emojis
     //[self extractSkins];
     //[self readEmojis:YES withVariant:NO pretty:YES];
-    //[self readFontCache:NO];
+    [self readFontCache:YES];
     //[self printEmojiUsetCodepoints:UCHAR_EMOJI_PRESENTATION];
     //[self printEmojiUsetCodepoints:UCHAR_EMOJI_MODIFIER];
     //[self printEmojiUsetCodepoints:UCHAR_EXTENDED_PICTOGRAPHIC];
