@@ -3,7 +3,7 @@
 //  EmojiCategory
 //
 //  Created by Thatchapon Unprasert on 8/2/16.
-//  Copyright © 2016 - 2018 Thatchapon Unprasert. All rights reserved.
+//  Copyright © 2016 - 2020 Thatchapon Unprasert. All rights reserved.
 //
 
 #import "ViewController.h"
@@ -320,7 +320,7 @@
     CFRelease(cfSet);
 }
 
-- (void)printEmojiUsetCodepoints:(UProperty)property {
+- (int32_t)printEmojiUsetCodepoints:(UProperty)property {
     NSMutableArray <NSString *> *codepoints = [NSMutableArray array];
     UErrorCode error = U_ZERO_ERROR;
     USet *set = uset_openEmpty();
@@ -337,18 +337,18 @@
         UChar32 start, end;
         UChar *string;
         string = buffer;
-        stringLen = uset_getItem(set, i, &start, &end, buffer, sizeof(buffer)/sizeof(UChar), &error);
+        stringLen = uset_getItem(set, i, &start, &end, buffer, sizeof(buffer) / sizeof(UChar), &error);
         if (error == U_BUFFER_OVERFLOW_ERROR) {
             string = (UChar *)malloc(sizeof(UChar) * (stringLen + 1));
             if (!string)
-                return;
+                return -1;
             error = U_ZERO_ERROR;
             uset_getItem(set, i, &start, &end, string, stringLen + 1, &error);
         }
         if (U_FAILURE(error)) {
             if (string != buffer)
                 free(string);
-            return;
+            return -1;
         }
         if (stringLen <= 0) {
             for (UChar32 c = start; c <= end + 1; ++c) {
@@ -362,6 +362,7 @@
     NSLog(@"Codepoints count: %d", codepointCount);
     [self prettyPrint:codepoints withQuotes:NO];
     uset_close(set);
+    return codepointCount;
 }
 
 - (void)printCodepointsForPreset:(NSInteger)preset {
@@ -390,7 +391,7 @@
     //[self printCodepointsForPreset:11]; // gender emojis
     //[self extractSkins];
     //[self readEmojis:YES withVariant:NO pretty:YES];
-    [self readFontCache:YES];
+    //[self readFontCache:YES];
     //[self printEmojiUsetCodepoints:UCHAR_EMOJI_PRESENTATION];
     //[self printEmojiUsetCodepoints:UCHAR_EMOJI_MODIFIER];
     //[self printEmojiUsetCodepoints:UCHAR_EXTENDED_PICTOGRAPHIC];

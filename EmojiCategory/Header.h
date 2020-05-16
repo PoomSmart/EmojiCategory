@@ -2,8 +2,7 @@
 //  Header.h
 //  EmojiCategory
 //
-//  Created by Thatchapon Unprasert on 11/10/2561 BE.
-//  Copyright © 2561 Thatchapon Unprasert. All rights reserved.
+//  Copyright © 2018 - 2020 Thatchapon Unprasert. All rights reserved.
 //
 
 #include <unicode/utf8.h>
