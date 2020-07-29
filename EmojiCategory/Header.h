@@ -13,6 +13,8 @@
 
 #define ZWJ @"‍"
 
+NS_ASSUME_NONNULL_BEGIN
+
 typedef struct USet USet;
 
 extern USet *uset_openEmpty(void);
@@ -35,6 +37,7 @@ extern int32_t uset_getItem(const USet *, int32_t, UChar32 *, UChar32 *, UChar *
 @property() NSString *emojiString;
 @end
 
+// They are now NSSet instead of NSArray as of iOS 14
 @interface EMFEmojiCategory : NSObject
 // iOS 10.2+
 + (NSArray <NSString *> *)PeopleEmoji;
@@ -109,10 +112,23 @@ extern int32_t uset_getItem(const USet *, int32_t, UChar32 *, UChar32 *, UChar *
 + (BOOL)_emojiString:(NSString *)emojiString containsSubstring:(NSString *)substring;
 + (BOOL)_genderEmojiBaseStringNeedVariantSelector:(NSString *)emojiBaseString;
 + (BOOL)_hasSkinToneVariantsForString:(NSString *)emojiString;
+
+// iOS 13.2+
++ (NSInteger)multiPersonTypeForString:(NSString *)string;
++ (NSInteger)_skinToneModifierFromSpecifierType:(NSString *)specifier;
++ (NSMutableArray <NSString *> *)_skinToneSpecifiersForString:(NSString *)string;
++ (NSArray <NSArray <NSString *> *> *)_skinToneChooserVariantsForMultiPersonType:(NSInteger)type;
++ (NSArray <NSArray <NSString *> *> * _Nullable)_skinToneChooserVariantsForString:(NSString *)string;
++ (NSArray <NSString *> *)_skinToneVariantsForMultiPersonType:(NSInteger)type;
++ (NSString *)skinToneSpecifierTypeFromEmojiFitzpatrickModifier:(int)modifier;
++ (NSString * _Nullable)multiPersonStringForString:(NSString *)string skinToneVariantSpecifier:(NSArray <NSString *> *)specifier;
++ (NSString *)_skinToneSuffixFromSpecifierType:(NSString *)specifier;
 @end
 
 typedef const void *MSImageRef;
 MSImageRef (*MSGetImageByName)(const char *file);
 void *(*MSFindSymbol)(MSImageRef image, const char *name);
+
+NS_ASSUME_NONNULL_END
 
 #endif /* Header_h */

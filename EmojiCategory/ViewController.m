@@ -383,6 +383,14 @@
     [self prettyPrint:codepoints withQuotes:NO asCodepoints:YES];
 }
 
+- (BOOL)isValidExtendCharacterForPictographicSequence:(UTF32Char)character {
+    return u_hasBinaryProperty(character, UCHAR_GRAPHEME_EXTEND) || u_hasBinaryProperty(character, UCHAR_EMOJI_MODIFIER);
+}
+
+- (BOOL)isValidExtendedPictographicCharacterForPictographicSequence:(UTF32Char)character {
+    return u_hasBinaryProperty(character, UCHAR_EXTENDED_PICTOGRAPHIC);
+}
+
 - (void)viewDidLoad {
     [super viewDidLoad];
     [self setup];
