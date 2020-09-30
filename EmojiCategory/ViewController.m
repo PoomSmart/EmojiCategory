@@ -19,6 +19,7 @@
     CTFontRef emojiFont;
     CGFontRef emojiCGFont;
     CFDataRef (*XTCopyUncompressedBitmapRepresentation)(const UInt8 *, CFIndex);
+    CFCharacterSetRef (*CreateCharacterSetWithCompressedBitmapRepresentation)(const CFDataRef characterSet);
 }
 @end
 
@@ -32,6 +33,13 @@
     CFDataRef uncompressedData = XTCopyUncompressedBitmapRepresentation(CFDataGetBytePtr(compressedData), CFDataGetLength(compressedData));
     CFRelease(compressedData);
     return uncompressedData;
+}
+
+- (CFCharacterSetRef)uncompressedCharacterSet:(CFDataRef)compressedData {
+    if (CreateCharacterSetWithCompressedBitmapRepresentation == NULL) {
+        return NULL;
+    }
+    return CreateCharacterSetWithCompressedBitmapRepresentation(compressedData);
 }
 
 - (NSString *)cfDataToString:(CFDataRef)data {
@@ -54,15 +62,18 @@
 
 - (void)readFontCache:(BOOL)onlyCharset {
     NSDictionary *(*dict)(void) = (NSDictionary* (*)(void))dlsym(gsFont, "GSFontCacheGetDictionary");
-    if (kCFCoreFoundationVersionNumber > 1575.17) {
-        NSData *emoji = dict()[@"CharacterSets.plist"][@".AppleColorEmojiUI"];
+    NSDictionary *theDict = dict();
+    if (kCFCoreFoundationVersionNumber > 1575.17 && kCFCoreFoundationVersionNumber < 1700.00) {
+        NSData *emoji = theDict[@"CharacterSets.plist"][@".AppleColorEmojiUI"];
         NSLog(@"Compressed:");
         [self printNSData:emoji];
         NSData *uncompressedData = [NSCharacterSet _emojiCharacterSet].bitmapRepresentation;
         NSLog(@"Uncompressed:");
         [self printNSData:uncompressedData];
     } else {
-        NSDictionary *emoji = dict()[@"CTFontInfo.plist"][@"Attrs"][@"AppleColorEmoji"];
+        NSDictionary *emoji = theDict[@"CTFontInfo.plist"][@"Attrs"][@"AppleColorEmoji"];
+        if (emoji == nil)
+            emoji = theDict[@"Attrs"][@"AppleColorEmoji"];
         if (emoji) {
             if (onlyCharset) {
                 NSLog(@"AppleColorEmoji CharacterSet:");
@@ -70,11 +81,14 @@
                 NSLog(@"Compressed:");
                 [self printNSData:compressedData];
                 NSLog(@"Uncompressed:");
-                [self printNSData:(__bridge NSData *)[self uncompressedBitmap:(__bridge CFDataRef)compressedData]];
+                if (kCFCoreFoundationVersionNumber >= 1700.00)
+                    [self printNSData:((__bridge NSCharacterSet *)[self uncompressedCharacterSet:(__bridge CFDataRef)compressedData]).bitmapRepresentation];
+                else
+                    [self printNSData:(__bridge NSData *)[self uncompressedBitmap:(__bridge CFDataRef)compressedData]];
             } else
                 NSLog(@"AppleColorEmoji:\n%@", emoji);
         }
-        NSDictionary *emojiUI = dict()[@"CTFontInfo.plist"][@"Attrs"][@".AppleColorEmojiUI"];
+        NSDictionary *emojiUI = theDict[@"CTFontInfo.plist"][@"Attrs"][@".AppleColorEmojiUI"];
         if (emojiUI) {
             if (onlyCharset) {
                 NSLog(@".AppleColorEmojiUI CharacterSet:");
@@ -276,6 +290,7 @@
         assert(MSFindSymbol != NULL);
         MSImageRef ref = MSGetImageByName("/System/Library/Frameworks/CoreText.framework/CoreText");
         XTCopyUncompressedBitmapRepresentation = MSFindSymbol(ref, "__Z38XTCopyUncompressedBitmapRepresentationPKhm");
+        CreateCharacterSetWithCompressedBitmapRepresentation = MSFindSymbol(ref, "__Z52CreateCharacterSetWithCompressedBitmapRepresentationPK8__CFData");
     }
     gsFont = dlopen("/System/Library/PrivateFrameworks/FontServices.framework/libGSFontCache.dylib", RTLD_LAZY);
     assert(gsFont != NULL);
