@@ -280,9 +280,9 @@
 }
 
 - (void)setup {
-    ct = dlopen("/System/Library/Frameworks/CoreText.framework/CoreText", RTLD_LAZY);
+    ct = dlopen("/System/Library/Frameworks/CoreText.framework/CoreText", RTLD_NOW);
     assert(ct != NULL);
-    cs = dlopen("/Library/Frameworks/CydiaSubstrate.framework/CydiaSubstrate", RTLD_LAZY);
+    cs = dlopen("/Library/Frameworks/CydiaSubstrate.framework/CydiaSubstrate", RTLD_NOW);
     if (cs) {
         MSGetImageByName = dlsym(cs, "MSGetImageByName");
         assert(MSGetImageByName != NULL);
@@ -292,9 +292,9 @@
         XTCopyUncompressedBitmapRepresentation = MSFindSymbol(ref, "__Z38XTCopyUncompressedBitmapRepresentationPKhm");
         CreateCharacterSetWithCompressedBitmapRepresentation = MSFindSymbol(ref, "__Z52CreateCharacterSetWithCompressedBitmapRepresentationPK8__CFData");
     }
-    gsFont = dlopen("/System/Library/PrivateFrameworks/FontServices.framework/libGSFontCache.dylib", RTLD_LAZY);
+    gsFont = dlopen("/System/Library/PrivateFrameworks/FontServices.framework/libGSFontCache.dylib", RTLD_NOW);
     assert(gsFont != NULL);
-    [[NSBundle bundleWithPath:@"/System/Library/PrivateFrameworks/EmojiFoundation.framework"] load];
+    dlopen("/System/Library/PrivateFrameworks/EmojiFoundation.framework", RTLD_NOW);
     emojiFont = CTFontCreateWithName(CFSTR("AppleColorEmoji"), 0.0, NULL);
     emojiCGFont = CTFontCopyGraphicsFont(emojiFont, NULL);
 }
@@ -418,6 +418,7 @@
     //[self printEmojiUsetCodepoints:UCHAR_EMOJI_PRESENTATION];
     //[self printEmojiUsetCodepoints:UCHAR_EMOJI_MODIFIER];
     //[self printEmojiUsetCodepoints:UCHAR_EXTENDED_PICTOGRAPHIC];
+    //[self printEmojiUsetCodepoints:UCHAR_GRAPHEME_EXTEND];
 }
 
 @end

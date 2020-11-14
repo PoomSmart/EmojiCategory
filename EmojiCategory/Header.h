@@ -126,8 +126,8 @@ extern int32_t uset_getItem(const USet *, int32_t, UChar32 *, UChar32 *, UChar *
 @end
 
 typedef const void *MSImageRef;
-MSImageRef (*MSGetImageByName)(const char *file);
-void *(*MSFindSymbol)(MSImageRef image, const char *name);
+MSImageRef _Nullable (* _Nullable MSGetImageByName)(const char *file);
+void *_Nullable(* _Nullable MSFindSymbol)(MSImageRef image, const char *name);
 
 NS_ASSUME_NONNULL_END
 
