@@ -105,7 +105,7 @@ extern int32_t uset_getItem(const USet *, int32_t, UChar32 *, UChar32 *, UChar *
 @property(retain, nonatomic) NSArray <UIKeyboardEmoji *> *emoji;
 @end
 
-@interface EmojiStringUtilities : NSObject
+@interface EMFStringUtilities : NSObject
 + (NSString *)_stringWithUnichar:(UChar32)unichar;
 + (NSString *)_baseFirstCharacterString:(NSString *)string;
 + (NSString *)_baseStringForEmojiString:(NSString *)emojiString;
