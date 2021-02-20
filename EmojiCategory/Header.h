@@ -61,10 +61,14 @@ extern int32_t uset_getItem(const USet *, int32_t, UChar32 *, UChar32 *, UChar *
 
 // iOS 12+
 + (NSArray <NSString *> *)FlagsEmoji; // Non-nation flags
-// iOS 13
+
+// iOS 13+
 + (NSArray <NSString *> *)ProfessionWithoutSkinToneEmoji;
 + (NSArray <NSString *> *)CoupleMultiSkinToneEmoji;
 + (NSArray <NSString *> *)MultiPersonFamilySkinToneEmoji;
+
+// iOS 14.5
++ (NSArray <NSString *> *)ExtendedCoupleMultiSkinToneEmoji;
 @end
 
 @interface UIKeyboardEmojiCategory : NSObject

@@ -179,6 +179,9 @@
             if ([categoryClass respondsToSelector:@selector(MultiPersonFamilySkinToneEmoji)])
                 return [categoryClass MultiPersonFamilySkinToneEmoji];
             break;
+        case 20:
+            if ([categoryClass respondsToSelector:@selector(ExtendedCoupleMultiSkinToneEmoji)])
+                return [categoryClass ExtendedCoupleMultiSkinToneEmoji];
     }
     NSLog(@"%@ has no relevant methods", categoryClass);
     return nil;
@@ -219,7 +222,7 @@
 
 - (void)readEmojis:(BOOL)preset withVariant:(BOOL)withVariant pretty:(BOOL)pretty {
     if (preset) {
-        for (NSInteger i = 0; i <= 19; ++i) {
+        for (NSInteger i = 0; i <= 20; ++i) {
             NSLog(@"Preset %ld:", (long)i);
             if (pretty)
                 [self prettyPrint:[self emojiPreset:i]];
