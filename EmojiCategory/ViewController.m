@@ -2,8 +2,8 @@
 //  ViewController.m
 //  EmojiCategory
 //
-//  Created by Thatchapon Unprasert on 8/2/16.
-//  Copyright © 2016 - 2020 Thatchapon Unprasert. All rights reserved.
+//  Created by PoomSmart on 8/2/16.
+//  Copyright © 2016 - 2022 PoomSmart. All rights reserved.
 //
 
 #import "ViewController.h"
@@ -81,8 +81,11 @@
                 NSLog(@"Compressed:");
                 [self printNSData:compressedData];
                 NSLog(@"Uncompressed:");
-                if (kCFCoreFoundationVersionNumber >= 1700.00)
-                    [self printNSData:((__bridge NSCharacterSet *)[self uncompressedCharacterSet:(__bridge CFDataRef)compressedData]).bitmapRepresentation];
+                if (kCFCoreFoundationVersionNumber >= 1700.00) {
+                    NSCharacterSet *nsCharacterSet = (__bridge NSCharacterSet *)[self uncompressedCharacterSet:(__bridge CFDataRef)compressedData];
+                    // [self prettyPrint:[self charsetToArray:nsCharacterSet]];
+                    [self printNSData:nsCharacterSet.bitmapRepresentation];
+                }
                 else
                     [self printNSData:(__bridge NSData *)[self uncompressedBitmap:(__bridge CFDataRef)compressedData]];
             } else
@@ -311,7 +314,7 @@
         NSLog(@"EMFStringUtilities does not exist");
 }
 
-- (NSArray *)charsetToArray:(NSCharacterSet *)charset {
+- (NSArray <NSString *> *)charsetToArray:(NSCharacterSet *)charset {
     NSMutableArray *array = [NSMutableArray array];
     for (int plane = 0; plane <= 16; ++plane) {
         if ([charset hasMemberInPlane:plane]) {
