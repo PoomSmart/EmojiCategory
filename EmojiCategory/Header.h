@@ -67,6 +67,9 @@ extern int32_t uset_getItem(const USet *, int32_t, UChar32 *, UChar32 *, UChar *
 + (NSArray <NSString *> *)CoupleMultiSkinToneEmoji;
 + (NSArray <NSString *> *)MultiPersonFamilySkinToneEmoji;
 
+// iOS 13.2+
++ (BOOL)_isCoupleMultiSkinToneEmoji:(NSString *)emoji;
+
 // iOS 14.5
 + (NSArray <NSString *> *)ExtendedCoupleMultiSkinToneEmoji;
 @end
@@ -125,7 +128,7 @@ extern int32_t uset_getItem(const USet *, int32_t, UChar32 *, UChar32 *, UChar *
 + (NSArray <NSArray <NSString *> *> * _Nullable)_skinToneChooserVariantsForString:(NSString *)string;
 + (NSArray <NSString *> *)_skinToneVariantsForMultiPersonType:(NSInteger)type;
 + (NSString *)skinToneSpecifierTypeFromEmojiFitzpatrickModifier:(int)modifier;
-+ (NSString * _Nullable)multiPersonStringForString:(NSString *)string skinToneVariantSpecifier:(NSArray <NSString *> *)specifier;
++ (NSString * _Nullable)_multiPersonStringForString:(NSString *)string skinToneVariantSpecifier:(NSArray <NSString *> *)specifier;
 + (NSString *)_skinToneSuffixFromSpecifierType:(NSString *)specifier;
 @end
 

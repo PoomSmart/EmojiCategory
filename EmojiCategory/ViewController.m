@@ -190,8 +190,8 @@
     return nil;
 }
 
-- (void)prettyPrint:(NSArray <NSString *> *)array withQuotes:(BOOL)wq asCodepoints:(BOOL)cp {
-    int x = 1, perLine = 10;
+- (void)prettyPrint:(NSArray <NSString *> *)array withQuotes:(BOOL)wq asCodepoints:(BOOL)cp perLine:(int)perLine {
+    int x = 1;
     NSMutableString *string = [NSMutableString string];
     NSLog(@"Total: %lu", (unsigned long)array.count);
     for (NSString *substring in array) {
@@ -213,6 +213,14 @@
             [string appendString:@" "];
     }
     NSLog(@"%@", string);
+}
+
+- (void)prettyPrint:(NSArray <NSString *> *)array withQuotes:(BOOL)wq asCodepoints:(BOOL)cp {
+    [self prettyPrint:array withQuotes:wq asCodepoints:cp perLine:10];
+}
+
+- (void)prettyPrint:(NSArray <NSString *> *)array withQuotes:(BOOL)wq perLine:(int)perLine {
+    [self prettyPrint:array withQuotes:wq asCodepoints:NO perLine:perLine];
 }
 
 - (void)prettyPrint:(NSArray <NSString *> *)array withQuotes:(BOOL)wq {
@@ -251,6 +259,27 @@
                         NSLog(@"%@", emoji);
                 }
             }
+        }
+    }
+}
+
+- (void)readMultiSkinEmojis {
+    static int modifiers[] = { 1, 3, 4, 5, 6, -1, 0 }; // -1 None, 0 silhouette
+    Class EMFEmojiCategory = NSClassFromString(@"EMFEmojiCategory");
+    Class EMFStringUtilities = NSClassFromString(@"EMFStringUtilities");
+    for (NSString *emoji in [self emojiPreset:0]) {
+        if ([EMFEmojiCategory _isCoupleMultiSkinToneEmoji:emoji]) {
+            NSMutableArray *variants = [NSMutableArray array];
+            for (int i = 0; i < 7; ++i) {
+                NSString *specifier1 = modifiers[i] == 0 ? @"EMFSkinToneSpecifierTypeFitzpatrickSilhouette" : [EMFStringUtilities skinToneSpecifierTypeFromEmojiFitzpatrickModifier:modifiers[i]];
+                for (int j = 0; j < 7; ++j) {
+                    NSString *specifier2 = modifiers[j] == 0 ? @"EMFSkinToneSpecifierTypeFitzpatrickSilhouette" : [EMFStringUtilities skinToneSpecifierTypeFromEmojiFitzpatrickModifier:modifiers[j]];
+                    NSString *skinned = [EMFStringUtilities _multiPersonStringForString:emoji skinToneVariantSpecifier:@[specifier1, specifier2]];
+                    [variants addObject:skinned];
+                }
+            }
+            NSLog(@"Base %@", emoji);
+            [self prettyPrint:variants withQuotes:YES perLine:7];
         }
     }
 }
@@ -425,6 +454,7 @@
     //[self printEmojiUsetCodepoints:UCHAR_EMOJI_MODIFIER];
     //[self printEmojiUsetCodepoints:UCHAR_EXTENDED_PICTOGRAPHIC];
     //[self printEmojiUsetCodepoints:UCHAR_GRAPHEME_EXTEND];
+    //[self readMultiSkinEmojis];
 }
 
 @end
