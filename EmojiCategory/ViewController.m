@@ -329,7 +329,7 @@
     }
     gsFont = dlopen("/System/Library/PrivateFrameworks/FontServices.framework/libGSFontCache.dylib", RTLD_NOW);
     assert(gsFont != NULL);
-    dlopen("/System/Library/PrivateFrameworks/EmojiFoundation.framework", RTLD_NOW);
+    dlopen("/System/Library/PrivateFrameworks/EmojiFoundation.framework/EmojiFoundation", RTLD_NOW);
     emojiFont = CTFontCreateWithName(CFSTR("AppleColorEmoji"), 0.0, NULL);
     emojiCGFont = CTFontCopyGraphicsFont(emojiFont, NULL);
 }
