@@ -61,7 +61,8 @@
 }
 
 - (void)readFontCache:(BOOL)onlyCharset {
-    NSDictionary *(*dict)(void) = (NSDictionary* (*)(void))dlsym(gsFont, "GSFontCacheGetDictionary");
+    NSDictionary *(*data)(NSString *) = (NSDictionary *(*)(NSString *))dlsym(gsFont, "GSFontCacheGetData");
+    NSDictionary *(*dict)(void) = (NSDictionary *(*)(void))dlsym(gsFont, "GSFontCacheGetDictionary");
     NSDictionary *theDict = dict();
     if (kCFCoreFoundationVersionNumber > 1575.17 && kCFCoreFoundationVersionNumber < 1700.00) {
         NSData *emoji = theDict[@"CharacterSets.plist"][@".AppleColorEmojiUI"];
@@ -444,17 +445,17 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     [self setup];
-    //[self printProfessionModifierCodepoints];
-    //[self printCodepointsForPreset:10]; // skin tone emojis
-    //[self printCodepointsForPreset:11]; // gender emojis
-    //[self extractSkins];
-    //[self readEmojis:YES withVariant:NO pretty:YES];
-    //[self readFontCache:YES];
-    //[self printEmojiUsetCodepoints:UCHAR_EMOJI_PRESENTATION];
-    //[self printEmojiUsetCodepoints:UCHAR_EMOJI_MODIFIER];
-    //[self printEmojiUsetCodepoints:UCHAR_EXTENDED_PICTOGRAPHIC];
-    //[self printEmojiUsetCodepoints:UCHAR_GRAPHEME_EXTEND];
-    //[self readMultiSkinEmojis];
+//    [self printProfessionModifierCodepoints];
+//    [self printCodepointsForPreset:10]; // skin tone emojis
+//    [self printCodepointsForPreset:11]; // gender emojis
+//    [self extractSkins];
+//    [self readEmojis:YES withVariant:NO pretty:YES];
+//    [self readFontCache:YES];
+//    [self printEmojiUsetCodepoints:UCHAR_EMOJI_PRESENTATION];
+//    [self printEmojiUsetCodepoints:UCHAR_EMOJI_MODIFIER];
+//    [self printEmojiUsetCodepoints:UCHAR_EXTENDED_PICTOGRAPHIC];
+//    [self printEmojiUsetCodepoints:UCHAR_GRAPHEME_EXTEND];
+//    [self readMultiSkinEmojis];
 }
 
 @end
