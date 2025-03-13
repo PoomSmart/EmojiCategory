@@ -25,6 +25,14 @@ extern void uset_freeze(USet *);
 extern int32_t uset_getItemCount(USet *);
 extern int32_t uset_getItem(const USet *, int32_t, UChar32 *, UChar32 *, UChar *, int32_t, UErrorCode *);
 
+@interface NSConstantDictionary : NSDictionary <NSFastEnumeration> {
+    NSUInteger _options;
+    NSUInteger _count;
+    const id *_keys;
+    const id *_objects;
+}
+@end
+
 @interface NSCharacterSet (EmojiFoundation)
 + (NSCharacterSet *)_emojiCharacterSet;
 @end

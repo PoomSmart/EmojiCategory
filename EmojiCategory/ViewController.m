@@ -61,9 +61,8 @@
 }
 
 - (void)readFontCache:(BOOL)onlyCharset {
-    NSDictionary *(*data)(NSString *) = (NSDictionary *(*)(NSString *))dlsym(gsFont, "GSFontCacheGetData");
-    NSDictionary *(*dict)(void) = (NSDictionary *(*)(void))dlsym(gsFont, "GSFontCacheGetDictionary");
-    NSDictionary *theDict = dict();
+    NSConstantDictionary *(*dict)(void) = (NSConstantDictionary *(*)(void))dlsym(gsFont, "GSFontCacheGetDictionary");
+    NSConstantDictionary *theDict = dict();
     if (kCFCoreFoundationVersionNumber > 1575.17 && kCFCoreFoundationVersionNumber < 1700.00) {
         NSData *emoji = theDict[@"CharacterSets.plist"][@".AppleColorEmojiUI"];
         NSLog(@"Compressed:");
