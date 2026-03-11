@@ -77,9 +77,14 @@ extern int32_t uset_getItem(const USet *, int32_t, UChar32 *, UChar32 *, UChar *
 
 // iOS 13.2+
 + (BOOL)_isCoupleMultiSkinToneEmoji:(NSString *)emoji;
++ (BOOL)_isComposedCoupleMultiSkinToneEmoji:(NSString *)emoji;
 
 // iOS 14.5
 + (NSArray <NSString *> *)ExtendedCoupleMultiSkinToneEmoji;
+
+// iOS 26.4+
++ (NSArray <NSString *> *)BunnyEarsMultiSkinToneEmoji;
++ (NSArray <NSString *> *)WrestlingMultiSkinToneEmoji;
 @end
 
 @interface UIKeyboardEmojiCategory : NSObject

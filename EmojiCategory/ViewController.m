@@ -11,6 +11,7 @@
 #import <CoreGraphics/CoreGraphics.h>
 #import "Header.h"
 #import <dlfcn.h>
+#import <objc/runtime.h>
 
 @interface ViewController (){
     void *ct;
@@ -63,6 +64,7 @@
 - (void)readFontCache:(BOOL)onlyCharset {
     NSConstantDictionary *(*dict)(void) = (NSConstantDictionary *(*)(void))dlsym(gsFont, "GSFontCacheGetDictionary");
     NSConstantDictionary *theDict = dict();
+    NSConstantDictionary *emoji = (NSConstantDictionary *)theDict[@"Attrs"];
     if (kCFCoreFoundationVersionNumber > 1575.17 && kCFCoreFoundationVersionNumber < 1700.00) {
         NSData *emoji = theDict[@"CharacterSets.plist"][@".AppleColorEmojiUI"];
         NSLog(@"Compressed:");
@@ -71,7 +73,7 @@
         NSLog(@"Uncompressed:");
         [self printNSData:uncompressedData];
     } else {
-        NSDictionary *emoji = theDict[@"CTFontInfo.plist"][@"Attrs"][@"AppleColorEmoji"];
+        NSConstantDictionary *emoji = theDict[@"CTFontInfo.plist"][@"Attrs"][@"AppleColorEmoji"];
         if (emoji == nil)
             emoji = theDict[@"Attrs"][@"AppleColorEmoji"];
         if (emoji) {
@@ -185,6 +187,12 @@
         case 20:
             if ([categoryClass respondsToSelector:@selector(ExtendedCoupleMultiSkinToneEmoji)])
                 return [categoryClass ExtendedCoupleMultiSkinToneEmoji];
+        case 21:
+            if ([categoryClass respondsToSelector:@selector(BunnyEarsMultiSkinToneEmoji)])
+                return [categoryClass BunnyEarsMultiSkinToneEmoji];
+        case 22:
+            if ([categoryClass respondsToSelector:@selector(WrestlingMultiSkinToneEmoji)])
+                return [categoryClass WrestlingMultiSkinToneEmoji];
     }
     NSLog(@"%@ has no relevant methods", categoryClass);
     return nil;
@@ -233,7 +241,7 @@
 
 - (void)readEmojis:(BOOL)preset withVariant:(BOOL)withVariant pretty:(BOOL)pretty {
     if (preset) {
-        for (NSInteger i = 0; i <= 20; ++i) {
+        for (NSInteger i = 0; i <= 22; ++i) {
             NSLog(@"Preset %ld:", (long)i);
             if (pretty)
                 [self prettyPrint:[self emojiPreset:i]];
@@ -267,8 +275,11 @@
     static int modifiers[] = { 1, 3, 4, 5, 6, -1, 0 }; // -1 None, 0 silhouette
     Class EMFEmojiCategory = NSClassFromString(@"EMFEmojiCategory");
     Class EMFStringUtilities = NSClassFromString(@"EMFStringUtilities");
-    for (NSString *emoji in [self emojiPreset:0]) {
-        if ([EMFEmojiCategory _isCoupleMultiSkinToneEmoji:emoji]) {
+    NSMutableArray *emojis = [NSMutableArray array];
+    [emojis addObjectsFromArray:[self emojiPreset:0]];
+    [emojis addObjectsFromArray:[self emojiPreset:4]];
+    for (NSString *emoji in emojis) {
+        if ([EMFEmojiCategory _isCoupleMultiSkinToneEmoji:emoji] || [EMFEmojiCategory _isComposedCoupleMultiSkinToneEmoji:emoji]) {
             NSMutableArray *variants = [NSMutableArray array];
             for (int i = 0; i < 7; ++i) {
                 NSString *specifier1 = modifiers[i] == 0 ? @"EMFSkinToneSpecifierTypeFitzpatrickSilhouette" : [EMFStringUtilities skinToneSpecifierTypeFromEmojiFitzpatrickModifier:modifiers[i]];
@@ -278,7 +289,7 @@
                     [variants addObject:skinned];
                 }
             }
-            NSLog(@"Base %@", emoji);
+            NSLog(@"Base %@ (Type: %ld)", emoji, [EMFStringUtilities multiPersonTypeForString:emoji]);
             [self prettyPrint:variants withQuotes:YES perLine:7];
         }
     }
