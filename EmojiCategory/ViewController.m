@@ -22,6 +22,7 @@
     CFDataRef (*XTCopyUncompressedBitmapRepresentation)(const UInt8 *, CFIndex);
     CFCharacterSetRef (*CreateCharacterSetWithCompressedBitmapRepresentation)(const CFDataRef characterSet);
 }
+- (NSString *)toHexCodepoints:(NSString *)string;
 @end
 
 @implementation ViewController
@@ -61,10 +62,26 @@
     [self prettyPrint:array withQuotes:NO];
 }
 
+- (NSString *)toHexCodepoints:(NSString *)string {
+    NSMutableArray *utf32 = [NSMutableArray array];
+    for (int i = 0; i < string.length; i++) {
+        UChar32 cbase = [string characterAtIndex:i];
+        if ((cbase & 0xFC00) == 0xD800 && i + 1 < string.length) {
+            UChar32 y = [string characterAtIndex:i + 1];
+            if ((y & 0xFC00) == 0xDC00) {
+                cbase = (cbase << 10) + y - 0x35FDC00;
+                i++;
+            }
+        }
+        [utf32 addObject:[NSString stringWithFormat:@"U+%04X", cbase]];
+    }
+    return [utf32 componentsJoinedByString:@" "];
+}
+
 - (void)readFontCache:(BOOL)onlyCharset {
     NSConstantDictionary *(*dict)(void) = (NSConstantDictionary *(*)(void))dlsym(gsFont, "GSFontCacheGetDictionary");
     NSConstantDictionary *theDict = dict();
-    NSConstantDictionary *emoji = (NSConstantDictionary *)theDict[@"Attrs"];
+//    NSConstantDictionary *emoji = (NSConstantDictionary *)theDict[@"Attrs"];
     if (kCFCoreFoundationVersionNumber > 1575.17 && kCFCoreFoundationVersionNumber < 1700.00) {
         NSData *emoji = theDict[@"CharacterSets.plist"][@".AppleColorEmojiUI"];
         NSLog(@"Compressed:");
@@ -289,8 +306,21 @@
                     [variants addObject:skinned];
                 }
             }
-            NSLog(@"Base %@ (Type: %ld)", emoji, [EMFStringUtilities multiPersonTypeForString:emoji]);
-            [self prettyPrint:variants withQuotes:YES perLine:7];
+            NSLog(@"Base %@ (Type: %ld)", emoji, (long)[EMFStringUtilities multiPersonTypeForString:emoji]);
+            for (NSString *variant in variants) {
+                NSLog(@"%@ (%@)", variant, [self toHexCodepoints:variant]);
+            }
+            
+            NSArray *chooserVariants = [EMFStringUtilities _skinToneChooserVariantsForString:emoji];
+            NSLog(@"Chooser:");
+            for (NSString *variant in chooserVariants[0]) {
+                NSLog(@"%@ (%@)", variant, [self toHexCodepoints:variant]);
+            }
+            NSLog(@"");
+            for (NSString *variant in chooserVariants[1]) {
+                NSLog(@"%@ (%@)", variant, [self toHexCodepoints:variant]);
+            }
+            NSLog(@"");
         }
     }
 }
@@ -466,6 +496,7 @@
 //    [self printEmojiUsetCodepoints:UCHAR_EXTENDED_PICTOGRAPHIC];
 //    [self printEmojiUsetCodepoints:UCHAR_GRAPHEME_EXTEND];
 //    [self readMultiSkinEmojis];
+//    [self readSkinToneChooserVariants];
 }
 
 @end
