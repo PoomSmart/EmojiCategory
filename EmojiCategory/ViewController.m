@@ -23,6 +23,8 @@
     CFCharacterSetRef (*CreateCharacterSetWithCompressedBitmapRepresentation)(const CFDataRef characterSet);
 }
 - (NSString *)toHexCodepoints:(NSString *)string;
+- (void)testMultiPersonString:(NSString *)emoji s1:(NSString *)s1 s2:(NSString *)s2;
+- (void)runExplicitMultiPersonTests;
 @end
 
 @implementation ViewController
@@ -288,7 +290,40 @@
     }
 }
 
+- (void)testMultiPersonString:(NSString *)emoji s1:(NSString *)s1 s2:(NSString *)s2 {
+    Class EMFStringUtilities = NSClassFromString(@"EMFStringUtilities");
+    NSString *skinned = [EMFStringUtilities _multiPersonStringForString:emoji skinToneVariantSpecifier:@[s1, s2]];
+    printf("Test: %s [%s, %s] -> %s (%s)\n", [emoji UTF8String], [s1 UTF8String], [s2 UTF8String], [skinned UTF8String], [[self toHexCodepoints:skinned] UTF8String]);
+}
+
+- (void)runExplicitMultiPersonTests {
+    printf("Explicit multiPersonStringForString Tests:\n");
+    NSArray *specifiers = @[
+        @"EMFSkinToneSpecifierTypeFitzpatrickNone",
+        @"EMFSkinToneSpecifierTypeFitzpatrick1_2",
+        @"EMFSkinToneSpecifierTypeFitzpatrick3",
+        @"EMFSkinToneSpecifierTypeFitzpatrick4",
+        @"EMFSkinToneSpecifierTypeFitzpatrick5",
+        @"EMFSkinToneSpecifierTypeFitzpatrick6",
+        @"EMFSkinToneSpecifierTypeFitzpatrickSilhouette"
+    ];
+    
+    NSArray *testEmojis = @[
+        @"🤝", @"👯", @"👯‍♀️", @"👯‍♂️", @"🤼", @"🤼‍♀️", @"🤼‍♂️", @"👫", @"👩‍❤️‍👨", @"🧑‍🤝‍🧑"
+    ];
+    
+    for (NSString *emoji in testEmojis) {
+        printf("Testing %s\n", [emoji UTF8String]);
+        for (NSString *s1 in specifiers) {
+            for (NSString *s2 in specifiers) {
+                [self testMultiPersonString:emoji s1:s1 s2:s2];
+            }
+        }
+    }
+}
+
 - (void)readMultiSkinEmojis {
+    [self runExplicitMultiPersonTests];
     static int modifiers[] = { 1, 3, 4, 5, 6, -1, 0 }; // -1 None, 0 silhouette
     Class EMFEmojiCategory = NSClassFromString(@"EMFEmojiCategory");
     Class EMFStringUtilities = NSClassFromString(@"EMFStringUtilities");
@@ -306,21 +341,21 @@
                     [variants addObject:skinned];
                 }
             }
-            NSLog(@"Base %@ (Type: %ld)", emoji, (long)[EMFStringUtilities multiPersonTypeForString:emoji]);
+            printf("Base %s (Type: %ld)\n", [emoji UTF8String], (long)[EMFStringUtilities multiPersonTypeForString:emoji]);
             for (NSString *variant in variants) {
-                NSLog(@"%@ (%@)", variant, [self toHexCodepoints:variant]);
+                printf("%s (%s)\n", [variant UTF8String], [[self toHexCodepoints:variant] UTF8String]);
             }
             
             NSArray *chooserVariants = [EMFStringUtilities _skinToneChooserVariantsForString:emoji];
-            NSLog(@"Chooser:");
+            printf("Chooser:\n");
             for (NSString *variant in chooserVariants[0]) {
-                NSLog(@"%@ (%@)", variant, [self toHexCodepoints:variant]);
+                printf("%s (%s)\n", [variant UTF8String], [[self toHexCodepoints:variant] UTF8String]);
             }
-            NSLog(@"");
+            printf("\n");
             for (NSString *variant in chooserVariants[1]) {
-                NSLog(@"%@ (%@)", variant, [self toHexCodepoints:variant]);
+                printf("%s (%s)\n", [variant UTF8String], [[self toHexCodepoints:variant] UTF8String]);
             }
-            NSLog(@"");
+            printf("\n");
         }
     }
 }
@@ -496,7 +531,6 @@
 //    [self printEmojiUsetCodepoints:UCHAR_EXTENDED_PICTOGRAPHIC];
 //    [self printEmojiUsetCodepoints:UCHAR_GRAPHEME_EXTEND];
 //    [self readMultiSkinEmojis];
-//    [self readSkinToneChooserVariants];
 }
 
 @end
