@@ -145,6 +145,36 @@ extern int32_t uset_getItem(const USet *, int32_t, UChar32 *, UChar32 *, UChar *
 + (NSString *)_skinToneSuffixFromSpecifierType:(NSString *)specifier;
 @end
 
+@interface UIKeyboardEmojiWellView : UIView
+@property (retain, nonatomic) UIView *wellContentView;
+@property (retain, nonatomic) UIFont *labelFont;
+@property (retain, nonatomic) NSString *stringRepresentation;
+@property (retain, nonatomic) UIColor *selectionBackgroundColor;
+@property (retain, nonatomic) NSIndexPath *associatedIndexPath;
+- (UIFont *)fontUsingSilhouette:(NSUInteger)silhouette size:(CGFloat)size;
+- (void)setStringRepresentation:(NSString *)representation silhouette:(NSUInteger)silhouette;
+@end
+
+@interface UIKeyboardEmojiFamilyConfigurationView : UIView
+@property (assign, nonatomic) BOOL usesDarkStyle;
+@property (retain, nonatomic) NSMutableArray <UIStackView *> *familyMemberStackViews;
+@property (retain, nonatomic) NSArray <NSArray <NSString *> *> *skinToneVariantRows;
+@property (retain, nonatomic) NSArray <NSArray <NSString *> *> *variantDisplayRows;
+@property (retain, nonatomic) UIKeyboardEmojiWellView *neutralWellView;
+@property (retain, nonatomic) UIKeyboardEmojiWellView *configuredWellView;
+@property (retain, nonatomic) UIStackView *previewWellStackView;
+@property (retain, nonatomic) NSString *baseEmojiString;
++ (UIColor *)_selectionAndSeparatorColorForDarkMode:(BOOL)darkMode;
+- (NSMutableArray <NSNumber *> *)selectedVariantIndices;
+- (NSArray <NSString *> *)_currentlySelectedSkinToneConfiguration;
+- (NSUInteger)_silhouetteFromCurrentSelections;
+- (void)_updatePreviewWellForCurrentSelection;
+- (void)_configureFamilyMemberWellStackViews;
+- (void)_configureSkinToneVariantSpecifiersForBaseString:(NSString *)baseString;
+- (void)_setCurrentlySelectedSkinToneConfiguration:(NSArray <NSString *> *)configuration;
+- (void)setSelectedVariantIndices:(NSArray <NSNumber *> *)indices;
+@end
+
 typedef const void *MSImageRef;
 MSImageRef _Nullable (* _Nullable MSGetImageByName)(const char *file);
 void *_Nullable(* _Nullable MSFindSymbol)(MSImageRef image, const char *name);

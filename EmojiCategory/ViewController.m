@@ -531,6 +531,16 @@
 //    [self printEmojiUsetCodepoints:UCHAR_EXTENDED_PICTOGRAPHIC];
 //    [self printEmojiUsetCodepoints:UCHAR_GRAPHEME_EXTEND];
 //    [self readMultiSkinEmojis];
+    
+    Class configurationViewClass = NSClassFromString(@"UIKeyboardEmojiFamilyConfigurationView");
+    if (configurationViewClass) {
+        UIKeyboardEmojiFamilyConfigurationView *configView = [[configurationViewClass alloc] initWithFrame:CGRectMake(0, 100, self.view.bounds.size.width, 300)];
+        [configView setValue:@(YES) forKey:@"usesDarkStyle"];
+        [configView _configureSkinToneVariantSpecifiersForBaseString:@"👯‍♀️"];
+        [configView _setCurrentlySelectedSkinToneConfiguration:@[@"EMFSkinToneSpecifierTypeFitzpatrickNone", @"EMFSkinToneSpecifierTypeFitzpatrickNone"]];
+        [configView setSelectedVariantIndices:@[@1, @2]];
+        [self.view addSubview:configView];
+    }
 }
 
 @end
